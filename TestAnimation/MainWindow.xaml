@@ -8,7 +8,7 @@
         Title="MainWindow" Height="450" Width="800">
     <Grid>
         <Button Name="ButtonDo" Content="do" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Width="96" Click="ButtonDo_Click"/>
-        <Border x:Name="CanvasBorder" BorderThickness="0,1,0,1">
+        <Border x:Name="CanvasBorder" BorderThickness="0,2,0,2">
             <Canvas Margin="40,35,40,26" Name="MyCanvas"/>
         </Border>
 

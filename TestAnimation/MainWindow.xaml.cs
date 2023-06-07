@@ -16,6 +16,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace TestAnimation {
     public class LambdaCollection<T> : Collection<T>
@@ -88,237 +89,103 @@ namespace TestAnimation {
     public partial class MainWindow : Window {
         private LambdaCollection<Ellipse> circles;
         private LambdaCollection<Rectangle> channel;
-        private const double _height = 300;
-        private const double _width = 600;
-        public class Ball
-        {
+        private const double _height = 210;
+        private const double _width = 510;
+        private double _coverVelocity = 1.5;
+        private const int _count = (int)(_width / 18.5);
+        private int _countOfRows = (int)_height / 21;
+        
+        public class Ball {
             public Ellipse Shape { get; set; }
             public Point Position { get; set; }
             public double Radius { get; set; }
-            public bool IsDeleted { get; set; }
             public SolidColorBrush BallColor =  Brushes.DodgerBlue;
         }
-        public class BallMovement
-        {
+        public class BallMovement {
             public Ball Ball { get; set; }
             public double Speed { get; set; }
         }
+        
         private BallMovement[] balls;
+        private BallMovement[] ballsNew;
 
         public MainWindow() {
             InitializeComponent();
-            //InitializeBalls();
-            //StartTimer();
-            
-            const int count = 19;
+
+
             MyCanvas.Height = _height;
             MyCanvas.Width = _width;
             MyCanvas.Background = Brushes.Transparent;
             CanvasBorder.BorderBrush = Brushes.Black;
             CanvasBorder.Height = _height;
             CanvasBorder.Width = _width;
-            // CanvasBorder.BorderThickness = new Thickness(1);
-
-            System.Windows.Shapes.Rectangle rect;
-            rect = new System.Windows.Shapes.Rectangle();
-            rect.Stroke = new SolidColorBrush(Colors.Black);
-            rect.Fill = Brushes.Transparent;
-            rect.Width = 30;
-            rect.Height = _height;
-            Canvas.SetLeft(rect, MyCanvas.Width);
-           // Canvas.SetTop(rect,MyCanvas);
-            
-            int countOfRows = (int)_height / 35;
-            
-            // Canvas.SetLeft(rect, 20);
-            // Canvas.SetTop(rect,10);
-            // MyCanvas.Children.Add(rect);
-            // channel = new LambdaCollection<Rectangle>(1)
-            //     .WithPropertyRect(WidthProperty, i => i * 100.0)
-            //     .WithPropertyRect(HeightProperty, i => i * 50.0)
-            //     .WithPropertyRect(Shape.FillProperty, i => new SolidColorBrush(Color.FromArgb(255, 0, 0, 0)));
-            //
-            // circles = new LambdaCollection<Ellipse>(count)
-            //     .WithProperty(WidthProperty, i => 20.0)
-            //     .WithProperty(HeightProperty, i => 20.0)
-            //     .WithProperty(Shape.FillProperty, i => new SolidColorBrush(Color.FromArgb(255, 135, 206, 250)))
-            //     .WithXY(x => x * 25.0,
-            //             y => y * 0.0 - 23.0);
-            //
-            // foreach (var ellipse in circles) {
-            //     MyCanvas.Children.Add(ellipse);
-            // }
-
             
             
-            balls = new BallMovement[count * countOfRows];
+            balls = new BallMovement[_count * _countOfRows];
             int k = 0;
-            for (int j = 0; j < countOfRows; j++) {
-                circles = new LambdaCollection<Ellipse>(count)
-                    .WithProperty(WidthProperty, i => 20.0)
-                    .WithProperty(HeightProperty, i => 20.0)
+            for (int j = 0; j < _countOfRows; j++) {
+                circles = new LambdaCollection<Ellipse>(_count)
+                    .WithProperty(WidthProperty, i => 10.0)
+                    .WithProperty(HeightProperty, i => 10.0)
                     .WithProperty(Shape.FillProperty, i => new SolidColorBrush(Color.FromArgb(255, 135, 206, 250)))
-                    .WithXY(x => x * 25.0,
-                        y => y * 0.0 + j * 35.0 - 23.0);
+                    .WithXY(x => x * 20.0,
+                        y => y * 0.0 + j * 20.0 - 23.0);
                 
                 
-                int widthBetween = -50;
+                int widthBetween = -60;
                 foreach (var ellipse in circles) {
                     //MyCanvas.Children.Add(ellipse);
      
-                    balls[k] = new BallMovement()
-                    {
-                        Ball = new Ball() { Shape = ellipse, Position = new Point(widthBetween, j * 35.0 - 16.0), Radius = 10 },
+                    balls[k] = new BallMovement() {
+                        Ball = new Ball() { Shape = ellipse, Position = new Point(widthBetween, j * 20.0 - 16.0), Radius = 5 },
                         /*Speed = 1 + j,*/
-                        Speed = 1 + j,
+                        Speed = _coverVelocity / _height * (_height - j * 20),
                         //Angle = 45 // задаем направление движения шарика в градусах
                     };
+                    Canvas.SetLeft(balls[k].Ball.Shape, widthBetween);
                     MyCanvas.Children.Add(balls[k].Ball.Shape);
-                    widthBetween += 25;
+                    widthBetween += 20;
                     k++;
                 }
-                
-
-            }
-            
-        }
-        private void StartTimer()
-        {
-            Timer timer = new Timer(UpdateBalls, null, 0, 20);
-        }
-
-        private void RemoveBall(BallMovement ball)
-        {
-            MyCanvas.Children.Remove(ball.Ball.Shape);
-            //balls.Remove(ball);
-        }
-        private void UpdateBalls(object state)
-        {
-            // foreach (BallMovement ball in balls)
-            // {
-            //     //if (!ball.IsMoving) continue; // пропускаем шарики, которые не двигаются
-            //
-            //     Dispatcher.Invoke(() =>
-            //     {
-            //         Canvas.SetLeft(ball.Ball.Shape, ball.Ball.Position.X - ball.Ball.Radius);
-            //         Canvas.SetTop(ball.Ball.Shape, ball.Ball.Position.Y - ball.Ball.Radius); // обновляем позицию шарика на Canvas
-            //     });
-            // }
-            
-            foreach (BallMovement ball in balls)
-            {
-                //double radians = ball.Angle * Math.PI / 180;
-                // if (ball.Ball.Position.X >= 300) {
-                //     ball.Ball.BallColor = Brushes.Transparent;
-                //     MyCanvas.Children.Remove(ball.Ball.Shape);
-                // }
-                
-                Dispatcher.Invoke(() =>
-                {
-                    Canvas.SetLeft(ball.Ball.Shape, ball.Ball.Position.X - ball.Ball.Radius);
-                    Canvas.SetTop(ball.Ball.Shape, ball.Ball.Position.Y - ball.Ball.Radius);
-                });
- 
             }
         }
+        
+        
+        private void MakeAnimation(BallMovement ball, bool isStarted = false) {
+            var startPositionX = isStarted ? ball.Ball.Position.X : -58;
+            var myDoubleAnimation = new DoubleAnimation {
+                
+                From = startPositionX,
+                To = MyCanvas.Width - 50,
+                FillBehavior = FillBehavior.Stop,
+                Duration = new Duration(
+                    new TimeSpan((long)((MyCanvas.Width - 50 - startPositionX) * 30000))) // какое-то число для нормальных тиков
+            };
+            myDoubleAnimation.Completed += (o, args) =>  MyStoryboardOnCompleted(ball, myDoubleAnimation);
+            Storyboard.SetTarget(myDoubleAnimation, ball.Ball.Shape);
+            Storyboard.SetTargetProperty(myDoubleAnimation, new PropertyPath(Canvas.LeftProperty));
+            var myStoryboard = new Storyboard {
+                SpeedRatio = ball.Speed / 10
+            };
+            myStoryboard.Children.Add(myDoubleAnimation);
+            myStoryboard.Begin();
+        }
+
+        private void MyStoryboardOnCompleted(BallMovement ball, DependencyObject myDoubleAnimation) {
+            MakeAnimation(ball);
+        }
+        
         private void ButtonDo_Click(object sender, RoutedEventArgs e) {
-            // StartTimer();
-            // // var c = new LambdaDoubleAnimationCollection(
-            // //     circles.Count,
-            // //     i => i * 25.0,
-            // //     i => CanvasBorder.Width,
-            // //     i => new Duration(TimeSpan.FromSeconds(2)),
-            // //     i => j => 100.0 );
-            // // c.BeginApplyAnimation(circles.Cast<UIElement>().ToArray(), Canvas.LeftProperty);
-            StartTimer();
-            
-            for (int i = 0; i < 152; i++) // добавляем анимацию движения трем рядам
-            {
-                // int rowIndex = i * 5;
-                // double speed = 50 + i * 25; // задаем скорость движения шариков
-                // double duration = 8 - i; // задаем продолжительность анимации
-                //
-                // for (int j = 0; j < 20; j++)
-                // {
-                    //balls[rowIndex + j].IsMoving = true; // устанавливаем флаг, что шарик двигается
-                    DoubleAnimation animation = new DoubleAnimation();
-                    animation.From = balls[i].Ball.Position.X;
-                    animation.To = MyCanvas.Width - 100;
-                    //animation.Completed += (s, ev) => { balls[i].Ball.BallColor = Brushes.Transparent; }; 
-                    //animation.DecelerationRatio = 1;
-                    //animation.SpeedRatio = 0;
-                    //animation.Duration = TimeSpan.FromSeconds(5);
-                    
-                    Storyboard.SetTarget(animation, balls[i].Ball.Shape);
-                    Storyboard.SetTargetProperty(animation, new PropertyPath(Canvas.LeftProperty));
-            
-                    Storyboard storyboard = new Storyboard();
-                    storyboard.Children.Add(animation);
-                    storyboard.SpeedRatio = balls[i].Speed / 20;
-                    //storyboard.Completed += (s, ev) => { MyCanvas.Children.Remove(balls[i].Ball.Shape); };
-                    //storyboard.Completed += (s, ev) => { balls[rowIndex + j].IsMoving = false; }; // сбрасываем флаг, что шарик двигается
-                   
-                    storyboard.Begin();
-                    
-                    //storyboard.Completed += (s, ev) => { MyCanvas.Children.Remove(balls[i].Ball.Shape); };
-                    Dispatcher.Invoke(() =>
- 
-                    { 
-                        
-                       // animation.Completed += (s, ev) => { MyCanvas.Children.Remove(balls[i].Ball.Shape); };
-                        // if (balls[i].Ball.Position.X >= MyCanvas.Width - 100) {
-                        //     balls[i].Ball.BallColor = Brushes.Transparent;
-                        //     MyCanvas.Children.Remove(balls[i].Ball.Shape);
-                        // }
-      
-                    });
-            
-                    // storyboard.Completed += (s, ev) => {
-                    //     foreach (var ball in balls) {
-                    //         ball.Ball.BallColor = Brushes.Transparent;
-                    //     }
-                    // };
-                    // balls[i].Ball.IsDeleted = true; // устанавливаем флаг для удаления шарика из коллекции BallMovement
-                    // balls = balls.Where(b => !b.Ball.IsDeleted).ToArray(); // удаляем шарики из BallMovement, которые достигли конца холста
+            for (int i = 0; i < _count * (_countOfRows - 1); i++) {
+                MakeAnimation(balls[i], true);
             }
-            
-            //
-            // tvar t = new tvar();
-            // t.ShowDialog();
-
-
+            // foreach (var ball in balls) {
+            //     MakeAnimation(ball, true);
+            // }
 
         }   
 
-
-
-        private void InitializeBalls()
-        {
-            balls = new BallMovement[20]; // создаем 3 шарика
-            double speed = 5;
-            double radius = 10;
-
-            for (int i = 0; i < balls.Length; i++)
-            {
-                Ellipse ellipse = new Ellipse();
-                ellipse.Width = radius * 2;
-                ellipse.Height = radius * 2;
-                ellipse.Fill = new SolidColorBrush(Colors.DodgerBlue); // задаем цвет шарика
-                //MyCanvas.Children.Add(ellipse); // добавляем шарик на Canvas
-
-                Point position = new Point(50 + i * 100, 50); // задаем начальную позицию шарика
-
-                balls[i] = new BallMovement()
-                {
-                    Ball = new Ball() { Shape = ellipse, Position = position, Radius = radius },
-                    Speed = speed,
-                    //Angle = 45 // задаем направление движения шарика в градусах
-                };
-               
-            }
-            
-        }
-        
+       
 
 
     }
